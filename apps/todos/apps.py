@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 from django.apps import AppConfig
 
 
 class TodosConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'todos'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.todos"
