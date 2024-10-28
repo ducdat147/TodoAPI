@@ -2,6 +2,7 @@
 from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 
 from apps.todos.models import Todo
@@ -10,10 +11,11 @@ from apps.todos.models import Todo
 
 
 class TodoAPITest(APITestCase):
-
     def setUp(self):
         self.user = User.objects.create_user(username="testuser", password="testpass")
         self.client.login(username="testuser", password="testpass")
+        self.token = Token.objects.create(user=self.user)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + self.token.key)
         self.todo = Todo.objects.create(
             title="Test Todo", description="Description", completed=False
         )
