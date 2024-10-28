@@ -2,7 +2,6 @@
 from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 
 from apps.todos.models import Todo
@@ -12,17 +11,15 @@ from apps.todos.models import Todo
 
 class TodoAPITest(APITestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="testpass")
-        self.client.login(username="testuser", password="testpass")
-        self.token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + self.token.key)
+        login_data = {"username": "testuser", "password": "testpass"}
+        self.user = User.objects.create_user(**login_data)
+        response = self.client.post(reverse("login"), login_data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("token", response.data)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + response.data["token"])
         self.todo = Todo.objects.create(
             title="Test Todo", description="Description", completed=False
         )
-
-    def test_list_todos(self):
-        response = self.client.get(reverse("todo-list-create"))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_create_todo(self):
         data = {
@@ -32,6 +29,11 @@ class TodoAPITest(APITestCase):
         }
         response = self.client.post(reverse("todo-list-create"), data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_list_todos(self):
+        response = self.client.get(reverse("todo-list-create"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIs(len(response.data), 1)
 
     def test_retrieve_todo(self):
         response = self.client.get(reverse("todo-detail", kwargs={"pk": self.todo.id}))
@@ -47,6 +49,7 @@ class TodoAPITest(APITestCase):
             reverse("todo-detail", kwargs={"pk": self.todo.id}), data
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["title"], "Updated Todo")
 
     def test_delete_todo(self):
         response = self.client.delete(
